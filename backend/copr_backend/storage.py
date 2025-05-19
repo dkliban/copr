@@ -255,25 +255,25 @@ class PulpStorage(Storage):
                     labels = {"build_id": build_id}
                     futures[executor.submit(self.upload_rpm, repository, path, labels)] = name
 
-            failed_tasks = []
-            exceptions = []
-            for future in as_completed(futures):
-                filepath = futures[future]
-                try:
-                    response = future.result()
-                    created = response.json().get("created_resources")
-                    if created:
-                        self.log.info("Uploaded to Pulp: %s", filepath)
-                    else:
-                        failed_tasks.append(response.json().get("pulp_href"))
-                except RuntimeError as exc:
-                    exceptions.append(f"{filepath} generated an exception: {exc}")
+        failed_tasks = []
+        exceptions = []
+        for future in as_completed(futures):
+            filepath = futures[future]
+            try:
+                response = future.result()
+                created = response.json().get("created_resources")
+                if created:
+                    self.log.info("Uploaded to Pulp: %s", filepath)
+                else:
+                    failed_tasks.append(response.json().get("pulp_href"))
+            except RuntimeError as exc:
+                exceptions.append(f"{filepath} generated an exception: {exc}")
 
-            if failed_tasks:
-                raise CoprBackendError(
-                    "Pulp tasks {0} didn't create any resources".format(failed_tasks))
-            if exceptions:
-                raise CoprBackendError(f"Exceptions encountered: {exceptions}")
+        if failed_tasks:
+            raise CoprBackendError(
+                "Pulp tasks {0} didn't create any resources".format(failed_tasks))
+        if exceptions:
+            raise CoprBackendError(f"Exceptions encountered: {exceptions}")
 
     def publish_repository(self, chroot, **kwargs):
         repository = self._get_repository(chroot)
